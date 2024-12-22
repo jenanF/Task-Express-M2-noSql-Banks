@@ -1,43 +1,48 @@
-let accounts = require('../../accounts');
 
-exports.accountCreate = (req, res) => {
-  const id = accounts[accounts.length - 1].id + 1;
-  const newAccount = { ...req.body, funds: 0, id };
-  accounts.push(newAccount);
+const account = require('../../models/Account')
+
+exports.accountCreate = async (req, res) => {
+  const newAccount = account.create(req.body)
   res.status(201).json(newAccount);
 };
 
-exports.accountDelete = (req, res) => {
+exports.accountDelete = async (req, res) => {
   const { accountId } = req.params;
-  const foundAccount = accounts.find((account) => account.id === +accountId);
+  const foundAccount = account.findById(accountId);
   if (foundAccount) {
-    accounts = accounts.filter((account) => account.id !== +accountId);
+    await foundAccount.deleteOne(accountId);
     res.status(204).end();
   } else {
     res.status(404).json({ message: 'Account not found' });
   }
 };
 
-exports.accountUpdate = (req, res) => {
+exports.accountUpdate = async (req, res) => {
   const { accountId } = req.params;
-  const foundAccount = accounts.find((account) => account.id === +accountId);
+  const foundAccount = account.findById(accountId);
   if (foundAccount) {
-    foundAccount.funds = req.body.funds;
+    await foundAccount.updateOne(req.body)
     res.status(204).end();
   } else {
     res.status(404).json({ message: 'Account not found' });
   }
 };
 
-exports.accountsGet = (req, res) => {
-  res.json(accounts);
+exports.accountsGet = async (req, res) => {
+  const accounts = account.find()
+  res.status(200).json(accounts);
 };
 
-exports.getAccountByUsername = (req, res) => {
+exports.getAccountByUsername = async (req, res) => {
   const { username } = req.params;
-  const foundAccount = accounts.find(
-    (account) => account.username === username
+  const foundAccount = account.find({ username: username }
   );
+  if (foundAccount) {
+    res.status(200).json(foundAccount);
+  } else {
+    res.status(404).json({ message: 'Account not found' });
+  }
+
   if (req.query.currency === 'usd') {
     const accountInUsd = { ...foundAccount, funds: foundAccount.funds * 3.31 };
     res.status(201).json(accountInUsd);
